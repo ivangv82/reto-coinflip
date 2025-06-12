@@ -125,8 +125,11 @@ if 'email_registrado' not in st.session_state:
         email = st.text_input("Introduce tu email", placeholder="tu.email@ejemplo.com")
         submitted = st.form_submit_button("¡Empezar a Jugar!")
         if submitted and email:
-            registrar_usuario(email)
-            st.rerun()
+            # Llamamos a la función y guardamos su resultado
+            registro_exitoso = registrar_usuario(email)
+            # Solo refrescamos la página si el registro tuvo éxito
+            if registro_exitoso:
+                st.rerun()
 else:
     # PANTALLA DE JUEGO
     if not st.session_state.game_over:
