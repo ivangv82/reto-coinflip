@@ -133,10 +133,12 @@ if 'email_registrado' not in st.session_state:
 else:
     # PANTALLA DE JUEGO
     if not st.session_state.game_over:
-        st.metric("💰 Saldo Actual", f"${st.session_state.saldo:,.2f}")
-        st.metric("🔄 Tiradas Restantes", f"{100 - st.session_state.tiradas_realizadas}")
+        c1, c2 = st.columns(2)
+        c1.metric("💰 Saldo Actual", f"${st.session_state.saldo:,.2f}")
+        c2.metric("🔄 Tiradas Restantes", f"{100 - st.session_state.tiradas_realizadas}")
 
-        monto_apuesta = st.number_input("Monto a apostar:", min_value=0.01, max_value=st.session_state.saldo, value=max(0.01, round(st.session_state.saldo * 0.1, 2)), step=0.01, format="%.2f")
+        st.subheader("Cantidad a apostar")
+        monto_apuesta = st.number_input("Monto a apostar:", label_visibility="collapsed", min_value=0.01, max_value=st.session_state.saldo, value=max(0.01, round(st.session_state.saldo * 0.1, 2)), step=0.01, format="%.2f")
 
         c1, c2 = st.columns(2)
         if c1.button("Apostar a Cara (60%)", use_container_width=True, type="primary"):
@@ -146,6 +148,27 @@ else:
             realizar_tirada(monto_apuesta, "Cruz")
             st.rerun()
 
+        st.markdown("---")
+
+        # SECCIONES NUEVAS AÑADIDAS
+        st.subheader("Reglas del Juego:")
+        st.markdown("""
+        - Comienzas con **$25** de saldo virtual.
+        - Tienes un total de **100 tiradas**.
+        - La moneda está cargada: **60% de probabilidad de Cara** y 40% de Cruz.
+        - Eliges cuánto apostar y a qué lado en cada tirada.
+        - Si te quedas sin saldo o completas las 100 tiradas, el juego termina.
+        - El ganador es quien consiga el saldo más alto al final.
+        """)
+
+        st.subheader("Premios:")
+        st.markdown("""
+        - **🥇 1er Puesto:** 12 meses de acceso a Bolsa Academy + Curso de Diseño de Sistemas + Tutoría 1 a 1.
+        - **🥈 2º Puesto:** 6 meses de acceso a Bolsa Academy + Curso Avanzado de Programación + Tutoría 1 a 1.
+        - **🥉 3er Puesto:** 1 mes de acceso a Bolsa Academy + Tutoría 1 a 1.
+        - **🎁 Puestos 4 al 10:** 1 mes de acceso gratuito a Bolsa Academy.
+        """)
+    
     # PANTALLA DE FIN DE JUEGO
     else:
         st.header("🏁 ¡Juego Terminado! 🏁")
@@ -159,8 +182,9 @@ else:
         })
         st.line_chart(chart_data, x='Tirada', y='Saldo')
 
-        st.info("Gracias por participar. Tu puntuación ha sido registrada.")
-        if st.button("Jugar de Nuevo con otro email"):
-            # Limpiar solo el email para permitir nuevo registro
-            del st.session_state.email_registrado
-            st.rerun()
+        # Bloque NUEVO
+        st.success("✅ ¡Gracias por participar! Tu puntuación final ha sido registrada.")
+        st.markdown("---")
+        st.subheader("¿Quieres aprender a invertir con un sistema probado?")
+        st.markdown("Da el siguiente paso y mejora tu operativa con mi curso gratuito de **Turbobolsa Lite**.")
+        st.link_button("¡Apuntarme al Curso Gratuito!", "https://formacionenbolsa.com/turbobolsa-lite/", type="primary")
