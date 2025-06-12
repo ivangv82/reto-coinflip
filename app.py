@@ -122,4 +122,4 @@ for tipo, msg in reversed(st.session_state.mensajes):
     elif tipo == "warning":
         st.warning(msg, icon="📉")
     elif tipo == "error":
-t.error(msg, icon="❗")
+        t.error(msg, icon="❗")
