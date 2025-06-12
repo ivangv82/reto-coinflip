@@ -54,28 +54,31 @@ def inicializar_juego():
     st.session_state.session_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
 
 #  función registrar_usuario 
+
 def registrar_usuario(email):
-    """Registra el email del usuario y da feedback detallado del proceso."""
+    """
+    Registra el email del usuario.
+    Devuelve True si tiene éxito, False si hay un error.
+    """
     try:
         st.info("Paso 1: Intentando conectar con Google Sheets...")
         sheet = get_gsheet()
         st.info("Paso 2: Conexión exitosa. Intentando escribir en la hoja...")
-
-        # Fila a insertar
+        
         fila = [email, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "Iniciado"]
         sheet.append_row(fila, value_input_option='USER_ENTERED')
-
+        
         st.info("Paso 3: Escritura en la hoja exitosa. Configurando el juego...")
         st.session_state.email_registrado = email
         inicializar_juego()
         st.success("¡Email registrado! Comienza el reto.")
         st.info("Paso 4: Refrescando la aplicación...")
+        return True  # Devuelve True si todo fue bien
 
     except Exception as e:
         st.error(f"❌ Ocurrió un error al registrar el usuario.")
-        # st.exception() es ideal para depurar porque muestra el error completo en la app
-        st.exception(e)
-
+        st.exception(e) # Muestra el error técnico completo
+        return False # Devuelve False si hubo un error
 def log_tirada_en_db(monto_apuesta, eleccion, resultado, saldo_anterior, saldo_nuevo):
     """Guarda el registro de una tirada en la base de datos SQLite."""
     conn = get_db_connection()
