@@ -54,31 +54,41 @@ def inicializar_juego():
     st.session_state.session_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
 
 #  función registrar_usuario 
-
 def registrar_usuario(email):
     """
-    Registra el email del usuario.
-    Devuelve True si tiene éxito, False si hay un error.
+    Registra el email si no existe previamente en la hoja de cálculo.
+    Devuelve True si el registro es exitoso, False si falla o el email ya existe.
     """
     try:
-        st.info("Paso 1: Intentando conectar con Google Sheets...")
+        st.info("Paso 1: Conectando con Google Sheets...")
         sheet = get_gsheet()
-        st.info("Paso 2: Conexión exitosa. Intentando escribir en la hoja...")
-        
+
+        st.info("Paso 2: Verificando si el email ya ha sido registrado...")
+        # Leemos todos los valores de la primera columna (donde están los emails)
+        lista_emails = sheet.col_values(1)
+
+        # Comprobamos si el email introducido ya está en la lista
+        if email in lista_emails:
+            st.error(f"El email '{email}' ya ha participado en el reto. Por favor, introduce un email diferente.")
+            return False # Devolvemos False para indicar que el registro no fue exitoso
+
+        st.info("El email es nuevo. Registrando...")
+
+        # Si el email no existe, procedemos a añadirlo
         fila = [email, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "Iniciado"]
         sheet.append_row(fila, value_input_option='USER_ENTERED')
-        
-        st.info("Paso 3: Escritura en la hoja exitosa. Configurando el juego...")
+
+        st.info("Escritura en la hoja exitosa. ¡Configurando el juego!")
         st.session_state.email_registrado = email
         inicializar_juego()
         st.success("¡Email registrado! Comienza el reto.")
-        st.info("Paso 4: Refrescando la aplicación...")
-        return True  # Devuelve True si todo fue bien
+        st.info("Refrescando la aplicación...")
+        return True
 
     except Exception as e:
-        st.error(f"❌ Ocurrió un error al registrar el usuario.")
+        st.error(f"❌ Ocurrió un error durante el registro.")
         st.exception(e) # Muestra el error técnico completo
-        return False # Devuelve False si hubo un error
+        return False
 def log_tirada_en_db(monto_apuesta, eleccion, resultado, saldo_anterior, saldo_nuevo):
     """Guarda el registro de una tirada en la base de datos SQLite."""
     conn = get_db_connection()
