@@ -1,6 +1,10 @@
 import streamlit as st
 import random
-import time
+import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
+import sqlite3
+from datetime import datetime
 
 # --- Configuración de la Página ---
 st.set_page_config(
@@ -9,117 +13,136 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- Lógica del Juego ---
+# --- Conexión a Google Sheets y DB ---
+def get_gsheet():
+    """Conecta con Google Sheets usando los secretos de Streamlit."""
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(
+        st.secrets["google_credentials"], scopes=scopes
+    )
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key("1RRA_N34InULYrNma-eF6QLNtPt6ZaqRfQ87gjShfTTg").sheet1
+    return sheet
 
+def get_db_connection():
+    """Conecta con la base de datos SQLite."""
+    conn = sqlite3.connect('coinflip_log.db')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS tiradas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            email TEXT NOT NULL,
+            tirada_num INTEGER NOT NULL,
+            apuesta REAL NOT NULL,
+            eleccion TEXT NOT NULL,
+            resultado TEXT NOT NULL,
+            saldo_anterior REAL NOT NULL,
+            saldo_nuevo REAL NOT NULL,
+            timestamp DATETIME NOT NULL
+        );
+    ''')
+    return conn
+
+# --- Lógica del Juego ---
 def inicializar_juego():
     """Configura o resetea el estado inicial del juego."""
     st.session_state.saldo = 25.00
     st.session_state.tiradas_realizadas = 0
     st.session_state.game_over = False
     st.session_state.mensajes = []
+    st.session_state.historial_saldo = [25.00] # Para el gráfico
+    st.session_state.session_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
+
+def registrar_usuario(email):
+    """Registra el email del usuario en la hoja de cálculo."""
+    try:
+        sheet = get_gsheet()
+        sheet.append_row([email, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "Iniciado"])
+        st.session_state.email_registrado = email
+        inicializar_juego()
+        st.success("¡Email registrado! Comienza el reto.")
+    except Exception as e:
+        st.error(f"No se pudo conectar con Google Sheets. Error: {e}")
+
+def log_tirada_en_db(monto_apuesta, eleccion, resultado, saldo_anterior, saldo_nuevo):
+    """Guarda el registro de una tirada en la base de datos SQLite."""
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT INTO tiradas (session_id, email, tirada_num, apuesta, eleccion, resultado, saldo_anterior, saldo_nuevo, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (st.session_state.session_id, st.session_state.email_registrado, st.session_state.tiradas_realizadas, monto_apuesta, eleccion, resultado, saldo_anterior, saldo_nuevo, datetime.now())
+    )
+    conn.commit()
+    conn.close()
 
 def realizar_tirada(monto_apuesta, eleccion_usuario):
-    """Procesa una ronda del juego: lanza la moneda, calcula el resultado y actualiza el estado."""
-    if monto_apuesta <= 0:
-        st.session_state.mensajes.append(("error", "La apuesta debe ser mayor que cero."))
-        return
-    
-    if monto_apuesta > st.session_state.saldo:
-        st.session_state.mensajes.append(("error", "No puedes apostar más de tu saldo actual."))
+    if monto_apuesta <= 0 or monto_apuesta > st.session_state.saldo:
+        st.error("Apuesta inválida.")
         return
 
-    # Simulación de la moneda cargada
-    es_cara = random.random() < 0.6  # 60% de probabilidad de ser Cara
+    saldo_anterior = st.session_state.saldo
+    es_cara = random.random() < 0.6
     resultado_moneda = "Cara" if es_cara else "Cruz"
-    
     st.session_state.tiradas_realizadas += 1
-    
     ganador = (eleccion_usuario == resultado_moneda)
-    
-    mensaje_resultado = f"Tirada {st.session_state.tiradas_realizadas}: Salió **{resultado_moneda}**. "
-    
+
     if ganador:
         st.session_state.saldo += monto_apuesta
-        st.session_state.mensajes.append(("success", f"{mensaje_resultado} ¡Ganaste ${monto_apuesta:,.2f}! Tu nuevo saldo es ${st.session_state.saldo:,.2f}."))
     else:
         st.session_state.saldo -= monto_apuesta
-        st.session_state.mensajes.append(("warning", f"{mensaje_resultado} Perdiste ${monto_apuesta:,.2f}. Tu nuevo saldo es ${st.session_state.saldo:,.2f}."))
-        
-    # Comprobar si el juego ha terminado
+
+    st.session_state.historial_saldo.append(st.session_state.saldo)
+    log_tirada_en_db(monto_apuesta, eleccion_usuario, resultado_moneda, saldo_anterior, st.session_state.saldo)
+
     if st.session_state.saldo < 0.01 or st.session_state.tiradas_realizadas >= 100:
         st.session_state.game_over = True
+        # Actualizar el resultado final en Google Sheets
+        sheet = get_gsheet()
+        cell = sheet.find(st.session_state.email_registrado)
+        sheet.update_cell(cell.row, 3, f"Finalizado - ${st.session_state.saldo:,.2f}")
 
-
-# --- Inicialización del Estado de la Sesión ---
-if 'saldo' not in st.session_state:
-    inicializar_juego()
 
 # --- Interfaz de Usuario ---
-
 st.title("🪙 Reto CoinFlip")
-st.markdown("""
-Bienvenido al reto. Empiezas con **$25** y tienes **100 tiradas** para maximizar tu saldo.
-La moneda está cargada: **60% de probabilidad de Cara** y 40% de Cruz.
-¡Piensa bien tu estrategia y que tengas suerte!
-""")
 
-st.divider()
-
-# --- Panel de Estado y Apuestas ---
-if not st.session_state.game_over:
-    col1, col2 = st.columns(2)
-    with col1:
+if 'email_registrado' not in st.session_state:
+    st.subheader("Paso 1: Regístrate para empezar")
+    with st.form("registro_form"):
+        email = st.text_input("Introduce tu email", placeholder="tu.email@ejemplo.com")
+        submitted = st.form_submit_button("¡Empezar a Jugar!")
+        if submitted and email:
+            registrar_usuario(email)
+            st.rerun()
+else:
+    # PANTALLA DE JUEGO
+    if not st.session_state.game_over:
         st.metric("💰 Saldo Actual", f"${st.session_state.saldo:,.2f}")
-    with col2:
         st.metric("🔄 Tiradas Restantes", f"{100 - st.session_state.tiradas_realizadas}")
-        
-    st.subheader("Realiza tu apuesta")
-    
-    monto_apuesta = st.number_input(
-        "¿Cuánto quieres apostar?", 
-        min_value=0.01, 
-        max_value=st.session_state.saldo, 
-        value=max(0.01, round(st.session_state.saldo * 0.1, 2)), # Sugerencia del 10%
-        step=0.01,
-        format="%.2f"
-    )
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("Apostar a Cara (60%)", use_container_width=True, type="primary"):
+
+        monto_apuesta = st.number_input("Monto a apostar:", min_value=0.01, max_value=st.session_state.saldo, value=max(0.01, round(st.session_state.saldo * 0.1, 2)), step=0.01, format="%.2f")
+
+        c1, c2 = st.columns(2)
+        if c1.button("Apostar a Cara (60%)", use_container_width=True, type="primary"):
             realizar_tirada(monto_apuesta, "Cara")
             st.rerun()
-
-    with c2:
-        if st.button("Apostar a Cruz (40%)", use_container_width=True):
+        if c2.button("Apostar a Cruz (40%)", use_container_width=True):
             realizar_tirada(monto_apuesta, "Cruz")
             st.rerun()
 
-# --- Pantalla de Fin de Juego ---
-else:
-    st.header("🏁 ¡Juego Terminado! 🏁")
-    st.balloons()
-    st.metric("🏆 Saldo Final", f"${st.session_state.saldo:,.2f}")
-    st.metric("Tiradas Realizadas", st.session_state.tiradas_realizadas)
-    
-    st.info("Gracias por participar. ¡No olvides apuntarte a la Masterclass para analizar las estrategias y anunciar a los ganadores!")
+    # PANTALLA DE FIN DE JUEGO
+    else:
+        st.header("🏁 ¡Juego Terminado! 🏁")
+        st.balloons()
+        st.metric("🏆 Saldo Final", f"${st.session_state.saldo:,.2f}")
 
-    if st.button("Jugar de Nuevo"):
-        inicializar_juego()
-        st.rerun()
+        st.subheader("Evolución de tu Capital")
+        chart_data = pd.DataFrame({
+            'Tirada': range(len(st.session_state.historial_saldo)),
+            'Saldo': st.session_state.historial_saldo
+        })
+        st.line_chart(chart_data, x='Tirada', y='Saldo')
 
-# --- Historial de Mensajes ---
-st.divider()
-st.write("**Historial de jugadas:**")
-
-if not st.session_state.mensajes:
-    st.caption("Aún no has realizado ninguna jugada.")
-
-# Mostrar mensajes en orden inverso (el más nuevo arriba)
-for tipo, msg in reversed(st.session_state.mensajes):
-    if tipo == "success":
-        st.success(msg, icon="🎉")
-    elif tipo == "warning":
-        st.warning(msg, icon="📉")
-    elif tipo == "error":
-        t.error(msg, icon="❗")
+        st.info("Gracias por participar. Tu puntuación ha sido registrada.")
+        if st.button("Jugar de Nuevo con otro email"):
+            # Limpiar solo el email para permitir nuevo registro
+            del st.session_state.email_registrado
+            st.rerun()
