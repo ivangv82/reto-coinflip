@@ -171,13 +171,13 @@ else:
         - El ganador es quien consiga el saldo más alto al final.
         """)
 
-        st.subheader("Premios:")
-        st.markdown("""
-        - **🥇 1er Puesto:** 12 meses de acceso a Bolsa Academy + Curso de Diseño de Sistemas + Tutoría 1 a 1.
-        - **🥈 2º Puesto:** 6 meses de acceso a Bolsa Academy + Curso Avanzado de Programación + Tutoría 1 a 1.
-        - **🥉 3er Puesto:** 1 mes de acceso a Bolsa Academy + Tutoría 1 a 1.
-        - **🎁 Puestos 4 al 10:** 1 mes de acceso gratuito a Bolsa Academy.
-        """)
+        #st.subheader("Premios:")
+        #st.markdown("""
+        #- **🥇 1er Puesto:** 12 meses de acceso a Bolsa Academy + Curso de Diseño de Sistemas + Tutoría 1 a 1.
+        #- **🥈 2º Puesto:** 6 meses de acceso a Bolsa Academy + Curso Avanzado de Programación + Tutoría 1 a 1.
+        #- **🥉 3er Puesto:** 1 mes de acceso a Bolsa Academy + Tutoría 1 a 1.
+        #- **🎁 Puestos 4 al 10:** 1 mes de acceso gratuito a Bolsa Academy.
+        #""")
     
     # PANTALLA DE FIN DE JUEGO
     else:
