@@ -33,7 +33,10 @@ registros_sheet, partidas_sheet = get_sheets(client)
 def cargar_partida(email):
     """Carga el estado de una partida desde la hoja 'Partidas'."""
     try:
+        # Buscamos la celda que contiene el email
         cell = partidas_sheet.find(email)
+
+        # Si se encuentra la celda, obtenemos los valores de esa fila
         if cell:
             row_values = partidas_sheet.row_values(cell.row)
             return {
@@ -42,10 +45,15 @@ def cargar_partida(email):
                 "tiradas_realizadas": int(row_values[2]),
                 "game_over": bool(int(row_values[3]))
             }
-    except gspread.exceptions.CellNotFound:
+        # Si no se encuentra, devolvemos None
+        return None
+
+    # CORRECCIÓN: Usamos gspread.CellNotFound directamente
+    except gspread.CellNotFound:
         return None
     except Exception as e:
-        st.error(f"Error al cargar la partida: {e}")
+        st.error("Ocurrió un error inesperado al cargar la partida.")
+        st.exception(e) # Muestra el error completo para facilitar la depuración
         return None
 
 def guardar_partida(row, email, saldo, tiradas, game_over_status):
