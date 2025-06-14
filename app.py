@@ -31,30 +31,36 @@ registros_sheet, partidas_sheet = get_sheets(client)
 # --- Lógica de la Partida (usando Google Sheets) ---
 
 def cargar_partida(email):
-    """Carga el estado de una partida desde la hoja 'Partidas'."""
+    """
+    Carga el estado de una partida desde la hoja 'Partidas'
+    y comprueba que los datos de la fila sean válidos.
+    """
     try:
-        # Buscamos la celda que contiene el email
         cell = partidas_sheet.find(email)
 
         # Si se encuentra la celda, obtenemos los valores de esa fila
         if cell:
             row_values = partidas_sheet.row_values(cell.row)
-            return {
-                "row": cell.row,
-                "saldo": float(row_values[1]),
-                "tiradas_realizadas": int(row_values[2]),
-                "game_over": bool(int(row_values[3]))
-            }
-        # Si no se encuentra, devolvemos None
-        return None
 
-    # CORRECCIÓN: Usamos gspread.CellNotFound directamente
+            # Comprobación de seguridad: la fila debe tener al menos 4 columnas para ser válida
+            if len(row_values) >= 4:
+                return {
+                    "row": cell.row,
+                    "saldo": float(row_values[1]),
+                    "tiradas_realizadas": int(row_values[2]),
+                    "game_over": bool(int(row_values[3]))
+                }
+
     except gspread.CellNotFound:
+        # Es normal, significa que es un jugador nuevo.
         return None
     except Exception as e:
-        st.error("Ocurrió un error inesperado al cargar la partida.")
-        st.exception(e) # Muestra el error completo para facilitar la depuración
-        return None
+        st.error(f"Se encontró una partida guardada pero no se pudo procesar. Se creará una nueva. Error: {e}")
+
+    # Si la celda se encontró pero la fila era inválida, o si hubo otro error,
+    # se considera que no hay partida válida que cargar y se creará una nueva.
+    return None
+
 
 def guardar_partida(row, email, saldo, tiradas, game_over_status):
     """Guarda o actualiza el estado de una partida en la hoja 'Partidas'."""
