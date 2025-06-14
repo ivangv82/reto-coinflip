@@ -30,36 +30,69 @@ registros_sheet, partidas_sheet = get_sheets(client)
 
 # --- Lógica de la Partida (usando Google Sheets) ---
 
+# En app.py, reemplaza la función cargar_partida por esta nueva versión:
+
 def cargar_partida(email):
     """
-    Carga el estado de una partida desde la hoja 'Partidas'
-    y comprueba que los datos de la fila sean válidos.
+    Carga el estado de una partida en modo "detective",
+    imprimiendo cada paso en pantalla.
     """
+    st.info("--- Iniciando Cargar Partida ---")
+    st.write(f"1. Buscando email: '{email}' en la hoja 'Partidas'...")
+
     try:
+        # Buscamos la celda que contiene el email
         cell = partidas_sheet.find(email)
 
-        # Si se encuentra la celda, obtenemos los valores de esa fila
-        if cell:
-            row_values = partidas_sheet.row_values(cell.row)
+        # Si `find` no devuelve nada, es un jugador nuevo.
+        if not cell:
+            st.success("2. Email no encontrado. Se tratará como un jugador nuevo.")
+            return None
 
-            # Comprobación de seguridad: la fila debe tener al menos 4 columnas para ser válida
-            if len(row_values) >= 4:
-                return {
-                    "row": cell.row,
-                    "saldo": float(row_values[1]),
-                    "tiradas_realizadas": int(row_values[2]),
-                    "game_over": bool(int(row_values[3]))
-                }
+        st.write(f"2. Email encontrado en la fila: {cell.row}")
+        row_values = partidas_sheet.row_values(cell.row)
+        st.write(f"3. Contenido de la fila: `{row_values}`")
+
+        # Comprobación de seguridad: la fila debe tener al menos 4 columnas
+        if len(row_values) < 4:
+            st.warning("4. La fila está incompleta (tiene menos de 4 columnas). Se tratará como partida nueva.")
+            return None
+
+        st.write("4. La fila parece completa. Intentando procesar los datos...")
+
+        # Intentar convertir los datos uno por uno para encontrar el error exacto
+        try:
+            saldo_str = row_values[1]
+            tiradas_str = row_values[2]
+            game_over_str = row_values[3]
+
+            st.write(f"  - Saldo leído: '{saldo_str}'")
+            st.write(f"  - Tiradas leídas: '{tiradas_str}'")
+            st.write(f"  - Game Over leído: '{game_over_str}'")
+
+            # Conversión a los tipos correctos
+            saldo = float(saldo_str) if saldo_str else 0.0
+            tiradas = int(tiradas_str) if tiradas_str else 0
+            game_over = bool(int(game_over_str)) if game_over_str else False
+
+            st.success("5. Datos procesados con éxito.")
+            return {
+                "row": cell.row, "saldo": saldo,
+                "tiradas_realizadas": tiradas, "game_over": game_over
+            }
+
+        except (ValueError, IndexError) as e:
+            st.error(f"5. ERROR al procesar los datos de la fila. Falla la conversión de tipos. Error: {e}")
+            st.warning("Se tratará como una partida nueva para evitar un fallo.")
+            return None
 
     except gspread.CellNotFound:
-        # Es normal, significa que es un jugador nuevo.
+        st.success("2. Excepción 'CellNotFound'. Se tratará como un jugador nuevo.")
         return None
     except Exception as e:
-        st.error(f"Se encontró una partida guardada pero no se pudo procesar. Se creará una nueva. Error: {e}")
-
-    # Si la celda se encontró pero la fila era inválida, o si hubo otro error,
-    # se considera que no hay partida válida que cargar y se creará una nueva.
-    return None
+        st.error("Ha ocurrido un error inesperado en `cargar_partida`.")
+        st.exception(e)
+        return None
 
 
 def guardar_partida(row, email, saldo, tiradas, game_over_status):
