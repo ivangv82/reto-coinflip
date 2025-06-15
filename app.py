@@ -138,6 +138,7 @@ st.title("🪙 Reto CoinFlip")
 # Pantalla de Login/Registro
 if 'email_registrado' not in st.session_state:
     st.subheader("Introduce tu email para jugar o continuar tu partida")
+    st.markdown("Guarda esta url para continuar en otro momento si lo necesitas.")
     with st.form("login_form"):
         email = st.text_input("Email", placeholder="tu.email@ejemplo.com")
         submitted = st.form_submit_button("Jugar")
