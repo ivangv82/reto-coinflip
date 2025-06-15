@@ -139,13 +139,7 @@ st.title("🪙 Reto CoinFlip")
 if 'email_registrado' not in st.session_state:
     st.subheader("Introduce tu email para jugar o continuar tu partida")
     st.markdown("Guarda esta url para continuar en otro momento si lo necesitas.")
-    st.markdown("---")
-            st.subheader("Reglas del Juego:")
-            st.markdown("- Comienzas con **$25**.\n- Tienes **100 tiradas**.\n- Cara (60%), Cruz (40%).\n- El juego termina al llegar a 100 tiradas o si el saldo es cero.")
-            
-            st.subheader("Premios:")
-            st.markdown("- **🥇 1er Puesto:** 12 meses Bolsa Academy + Curso Diseño Sistemas + Tutoría.\n- **🥈 2º Puesto:** 6 meses Bolsa Academy + Curso Avanzado Programación + Tutoría.\n- **🥉 3er Puesto:** 1 mes Bolsa Academy + Tutoría.")
-
+    
     with st.form("login_form"):
         email = st.text_input("Email", placeholder="tu.email@ejemplo.com")
         submitted = st.form_submit_button("Jugar")
