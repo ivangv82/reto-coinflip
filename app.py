@@ -158,12 +158,12 @@ if 'email_registrado' not in st.session_state:
         "- El juego termina al llegar a 100 tiradas o si el saldo es cero."
     )
 
-    st.subheader("Premios:")
-    st.markdown(
-        "- **🥇 1er Puesto:** 12 meses Bolsa Academy + Curso Diseño Sistemas + Tutoría.\n"
-        "- **🥈 2º Puesto:** 6 meses Bolsa Academy + Curso Avanzado Programación + Tutoría.\n"
-        "- **🥉 3er Puesto:** 1 mes Bolsa Academy + Tutoría."
-    )
+    #st.subheader("Premios:")
+    #st.markdown(
+    #    "- **🥇 1er Puesto:** 12 meses Bolsa Academy + Curso Diseño Sistemas + Tutoría.\n"
+    #    "- **🥈 2º Puesto:** 6 meses Bolsa Academy + Curso Avanzado Programación + Tutoría.\n"
+    #    "- **🥉 3er Puesto:** 1 mes Bolsa Academy + Tutoría."
+    #)
         
 else:
     # PANTALLA DE JUEGO ACTIVO
@@ -182,6 +182,24 @@ else:
         if c2.button("Apostar a Cruz (40%)", use_container_width=True):
             realizar_tirada(monto_apuesta, "Cruz")
             st.rerun()
+
+    # --- REGLAS Y PREMIOS ---
+        st.markdown("---")
+        st.subheader("Reglas del Juego:")
+        st.markdown(
+            "- Comienzas con **$25**.\n"
+            "- Tienes **100 tiradas**.\n"
+            "- Cara (60%), Cruz (40%).\n"
+            "- El juego termina al llegar a 100 tiradas o si el saldo es cero."
+        )
+    
+        #st.subheader("Premios:")
+        #st.markdown(
+        #    "- **🥇 1er Puesto:** 12 meses Bolsa Academy + Curso Diseño Sistemas + Tutoría.\n"
+        #    "- **🥈 2º Puesto:** 6 meses Bolsa Academy + Curso Avanzado Programación + Tutoría.\n"
+        #    "- **🥉 3er Puesto:** 1 mes Bolsa Academy + Tutoría."
+        #)
+    
     # PANTALLA DE FIN DE JUEGO
     else:
         st.header("🏁 ¡Juego Terminado! 🏁")
