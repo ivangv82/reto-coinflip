@@ -145,6 +145,13 @@ if 'email_registrado' not in st.session_state:
         if submitted and email:
             login_o_registro(email)
             st.rerun()
+    st.markdown("---")
+        st.subheader("Reglas del Juego:")
+        st.markdown("- Comienzas con **$25**.\n- Tienes **100 tiradas**.\n- Cara (60%), Cruz (40%).\n- El juego termina al llegar a 100 tiradas o si el saldo es cero.")
+        
+        st.subheader("Premios:")
+        st.markdown("- **🥇 1er Puesto:** 12 meses Bolsa Academy + Curso Diseño Sistemas + Tutoría.\n- **🥈 2º Puesto:** 6 meses Bolsa Academy + Curso Avanzado Programación + Tutoría.\n- **🥉 3er Puesto:** 1 mes Bolsa Academy + Tutoría.")
+
 else:
     # PANTALLA DE JUEGO ACTIVO
     if not st.session_state.game_over:
